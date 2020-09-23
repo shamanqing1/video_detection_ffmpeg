@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <boost/filesystem.hpp>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -12,13 +13,20 @@ extern "C" {
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
+namespace fs = boost::filesystem;
+
 int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame, SwsContext *pSwsContxt, AVFrame * pOutFrame);
 
 int main(int argc, char const *argv[])
 {
-    AVFormatContext * pFormatContext = nullptr;
     const char *filename = argv[1];
+    const std::string outDir = std::string(argv[2]) + "/";
 
+    if(!fs::exists(outDir)) {
+        fs::create_directory(outDir);
+    }
+
+    AVFormatContext * pFormatContext = nullptr;
     avformat_open_input(&pFormatContext, filename, nullptr, nullptr);
     if(!pFormatContext)
     {
@@ -110,7 +118,7 @@ int main(int argc, char const *argv[])
             // std::cout << response << ", " << pRgbFrame->width << " x " << pRgbFrame->height << std::endl;
             // std::cout << pRgbFrame->linesize << std::endl;
             cv::Mat bgrImage(pRgbFrame->height, pRgbFrame->width, CV_8UC3, pRgbFrame->data[0]);
-            cv::imwrite(std::to_string(i++) + ".jpg", bgrImage);
+            cv::imwrite(outDir+std::to_string(i++)+".jpg", bgrImage);
         }
         av_packet_unref(pPacket);
     }
